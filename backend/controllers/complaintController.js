@@ -126,10 +126,26 @@ exports.reportComplaint = async (req, res, next) => {
                 });
             }
             complaint.reportCount += 1;
+
+            // Automatic Escalation on 3rd report
+            if (complaint.reportCount === 3) {
+                complaint.status = 'Escalated';
+                complaint.escalated = true;
+                if (complaint.timeline) {
+                    complaint.timeline.push({
+                        step: 'Escalated',
+                        date: new Date(),
+                        done: true
+                    });
+                }
+            }
+
             await complaint.save();
             return res.status(200).json({
                 success: true,
-                message: 'Issue report count increased.',
+                message: complaint.reportCount === 3
+                    ? 'Issue report count increased and ESCALATED!'
+                    : 'Issue report count increased.',
                 complaint,
             });
         }

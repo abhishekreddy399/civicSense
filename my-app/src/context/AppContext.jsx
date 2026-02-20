@@ -71,7 +71,13 @@ export function AppProvider({ children }) {
     // ── Complaint CRUD (local + localStorage) ─────────────────────────────────
     const addComplaint = useCallback(
         (complaint) => {
-            setUserComplaints((prev) => [complaint, ...prev]);
+            setUserComplaints((prev) => {
+                const exists = prev.find((c) => (c.complaintId || c.id) === (complaint.complaintId || complaint.id));
+                if (exists) {
+                    return prev.map((c) => (c.complaintId || c.id) === (complaint.complaintId || complaint.id) ? { ...c, ...complaint } : c);
+                }
+                return [complaint, ...prev];
+            });
         },
         [setUserComplaints]
     );
