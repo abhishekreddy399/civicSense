@@ -60,7 +60,7 @@ app.use('/api/analytics', require('./routes/analytics'));
 
 // ─── 404 Handler ─────────────────────────────────────────────────────────────
 app.use('*', (req, res) => {
-    res.status(404).json({ success: false, message: `Route ${req.originalUrl} not found` });
+    res.status(404).json({ success: false, message: `Route ${req.method} ${req.originalUrl} not found` });
 });
 
 // ─── Global Error Handler ─────────────────────────────────────────────────────
