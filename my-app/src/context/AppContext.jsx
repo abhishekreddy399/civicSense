@@ -15,7 +15,14 @@ export function AppProvider({ children }) {
 
     // Merge mock + user complaints, user complaints take precedence for updates
     const allComplaints = React.useMemo(() => {
-        const normalizedUser = userComplaints.map(normalizeComplaint);
+        // Deduplicate user complaints by ID (take the last one/update)
+        const dedupedUser = userComplaints.reduce((acc, curr) => {
+            const id = curr.complaintId || curr.id;
+            acc[id] = normalizeComplaint(curr);
+            return acc;
+        }, {});
+
+        const normalizedUser = Object.values(dedupedUser);
         const userIds = new Set(normalizedUser.map((c) => c.id));
         const mockFiltered = MOCK_COMPLAINTS.filter((c) => !userIds.has(c.id)).map(normalizeComplaint);
         return [...normalizedUser, ...mockFiltered];
