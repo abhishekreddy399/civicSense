@@ -5,7 +5,8 @@ import { StatusBadge, PriorityBadge } from '../components/ui/Badge';
 import StatusTimeline from '../components/complaints/StatusTimeline';
 import { getIssueIcon, formatDate } from '../utils/helpers';
 import EmptyState from '../components/ui/EmptyState';
-import { Search, MapPin, Building2, Clock, ChevronRight, Copy } from 'lucide-react';
+import { complaintsAPI } from '../services/api';
+import { Search, MapPin, Building2, Clock, ChevronRight, Copy, AlertTriangle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
