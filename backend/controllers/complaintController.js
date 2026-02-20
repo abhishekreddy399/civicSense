@@ -115,8 +115,8 @@ exports.reportComplaint = async (req, res, next) => {
             return res.status(400).json({ success: false, message: 'Title and description are required' });
         }
 
-        // ── Check if same user has already reported same title ──
-        let complaint = await Complaint.findOne({ title, reportedBy });
+        // ── Check if same issue has already been reported (by anyone) ──
+        let complaint = await Complaint.findOne({ title, issueType });
 
         if (complaint) {
             if (complaint.reportCount >= 3) {

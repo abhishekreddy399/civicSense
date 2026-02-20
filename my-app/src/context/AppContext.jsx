@@ -14,18 +14,14 @@ export function AppProvider({ children }) {
     const [authUser, setAuthUser] = useLocalStorage('civic_user', null);
 
     // Merge mock + user complaints, user complaints take precedence for updates
+    // Use only user complaints, remove mock data
     const allComplaints = React.useMemo(() => {
-        // Deduplicate user complaints by ID (take the last one/update)
-        const dedupedUser = userComplaints.reduce((acc, curr) => {
+        const deduped = userComplaints.reduce((acc, curr) => {
             const id = curr.complaintId || curr.id;
-            acc[id] = normalizeComplaint(curr);
+            if (id) acc[id] = normalizeComplaint(curr);
             return acc;
         }, {});
-
-        const normalizedUser = Object.values(dedupedUser);
-        const userIds = new Set(normalizedUser.map((c) => c.id));
-        const mockFiltered = MOCK_COMPLAINTS.filter((c) => !userIds.has(c.id)).map(normalizeComplaint);
-        return [...normalizedUser, ...mockFiltered];
+        return Object.values(deduped);
     }, [userComplaints]);
 
     // Apply dark mode class to <html>
