@@ -12,15 +12,15 @@ const {
 const { protect, adminOnly, optionalAuth } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 
-// Public routes
-router.get('/nearby', getNearbyComplaints);
-router.get('/:complaintId', getComplaint);
-router.post('/:complaintId/upvote', upvoteComplaint);
-
 // ── New Complaint Escalation Routes ──
 router.post('/report', protect, upload.single('image'), reportComplaint);
 router.put('/escalate/:id', protect, escalateComplaint);
 router.get('/admin/escalated', protect, adminOnly, getEscalatedComplaints);
+
+// Public routes
+router.get('/nearby', getNearbyComplaints);
+router.get('/:complaintId', getComplaint);
+router.post('/:complaintId/upvote', upvoteComplaint);
 
 // Legacy Create — optional auth (citizens who are logged in get their user ID attached)
 router.post('/', optionalAuth, upload.single('image'), createComplaint);
