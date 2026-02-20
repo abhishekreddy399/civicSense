@@ -34,5 +34,28 @@ npm start
 - **Admin Dashboard**: Manage complaints and assign departments.
 - **Data Insights**: Comprehensive analytics for city infrastructure health.
 
+## 🚀 Deployment Guide
+
+### 1. Frontend (Vercel)
+- **Repo Link**: Connect this GitHub repo.
+- **Root Directory**: Select `my-app`.
+- **Framework Preset**: `Create React App`.
+- **Environment Variables**:
+  - `REACT_APP_API_URL`: Set this to your Railway Backend URL (e.g., `https://backend-production-xyz.up.railway.app`).
+
+### 2. Backend (Railway)
+- **Repo Link**: Connect this GitHub repo.
+- **Root Directory**: Select `backend`.
+- **Environment Variables**:
+  - `MONGO_URI`: Your MongoDB connection string.
+  - `JWT_SECRET`: A long random string.
+  - `CLOUDINARY_CLOUD_NAME`: (Required for photos)
+  - `CLOUDINARY_API_KEY`: (Required for photos)
+  - `CLOUDINARY_API_SECRET`: (Required for photos)
+  - `EMAIL_USER`: (For notifications)
+  - `EMAIL_PASS`: (For notifications)
+  - `CLIENT_URL`: Set to your Vercel URL (e.g., `https://civicsense.vercel.app`).
+  - `PORT`: (Railway sets this automatically, but you can default to 5000).
+
 ---
 Built for Hackathon Project 2026.
