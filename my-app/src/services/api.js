@@ -43,12 +43,25 @@ export const authAPI = {
 // ═══════════════════════════════════════════════════════════
 export const complaintsAPI = {
     /**
-     * Create a complaint — accepts FormData for image upload
+     * Create/Report a complaint — handles reportCount logic
      */
-    create: (formData) =>
-        api.post('/api/complaints', formData, {
+    report: (formData) =>
+        api.post('/api/complaints/report', formData, {
             headers: { 'Content-Type': 'multipart/form-data' },
         }),
+
+    /**
+     * Legacy Create (mapped to report)
+     */
+    create: (formData) =>
+        api.post('/api/complaints/report', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+        }),
+
+    /**
+     * Escalate a complaint
+     */
+    escalate: (id) => api.put(`/api/complaints/escalate/${id}`),
 
     /**
      * Get a complaint by its human-readable ID (e.g. CIV-2026-1234)
@@ -75,6 +88,11 @@ export const adminAPI = {
      * Get all complaints with optional filters
      */
     getAll: (params = {}) => api.get('/api/admin/complaints', { params }),
+
+    /**
+     * Get only escalated complaints
+     */
+    getEscalated: () => api.get('/api/complaints/admin/escalated'),
 
     /**
      * Update complaint status

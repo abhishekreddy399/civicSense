@@ -135,8 +135,8 @@ export default function TrackComplaintPage() {
                                 <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{formatDate(complaint.createdAt)}</p>
                             </div>
                             <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-700/50">
-                                <p className="text-xs text-slate-400 mb-1">Last Updated</p>
-                                <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{formatDate(complaint.updatedAt)}</p>
+                                <p className="text-xs text-slate-400 mb-1">Report Count</p>
+                                <p className="text-sm font-medium text-slate-700 dark:text-slate-300">📈 {complaint.reportCount || 1} / 3 reports</p>
                             </div>
                             {complaint.department && (
                                 <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 col-span-2">
@@ -144,11 +144,35 @@ export default function TrackComplaintPage() {
                                     <p className="text-sm font-semibold text-blue-700 dark:text-blue-300">{complaint.department}</p>
                                 </div>
                             )}
-                            <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-700/50">
+                            <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-700/50 col-span-2">
                                 <p className="text-xs text-slate-400 mb-1">Community Upvotes</p>
                                 <p className="text-sm font-medium text-slate-700 dark:text-slate-300">👍 {complaint.upvotes || 0} residents confirmed</p>
                             </div>
                         </div>
+
+                        {/* Escalate Action */}
+                        {complaint.reportCount >= 3 && !complaint.escalated && (
+                            <div className="mt-4 p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+                                <p className="text-sm font-bold text-red-700 dark:text-red-400">Issue persistent even after 3 reports?</p>
+                                <p className="text-xs text-red-600 dark:text-red-500 mt-1 mb-3">You can now escalate this directly to senior authorities.</p>
+                                <button
+                                    onClick={async () => {
+                                        try {
+                                            const data = await complaintsAPI.escalate(complaint._id);
+                                            toast.success('🚀 Complaint Escalated!');
+                                            // Reload complaint data
+                                            const updated = { ...complaint, ...data.complaint, id: data.complaint.complaintId };
+                                            setComplaint(updated);
+                                        } catch (err) {
+                                            toast.error(err.message);
+                                        }
+                                    }}
+                                    className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-bold transition-colors flex items-center justify-center gap-2"
+                                >
+                                    <AlertTriangle size={16} /> Escalate to Authority
+                                </button>
+                            </div>
+                        )}
 
                         {complaint.photo && (
                             <div className="mt-4">

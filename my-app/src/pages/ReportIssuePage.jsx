@@ -44,10 +44,12 @@ export default function ReportIssuePage() {
     const fileRef = useRef();
 
     const [form, setForm] = useState({
+        title: '',
         type: params.get('type') || '',
         description: '',
         email: '',
     });
+
     const [photo, setPhoto] = useState(null);
     const [photoPreview, setPhotoPreview] = useState(null);
     const [locating, setLocating] = useState(false);
@@ -164,6 +166,7 @@ export default function ReportIssuePage() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (!form.title.trim()) { toast.error('Please enter a title'); return; }
         if (!form.type) { toast.error('Please select an issue type'); return; }
         if (!form.description.trim()) { toast.error('Please describe the issue'); return; }
         if (!selectedArea) { toast.error('Please select location on map'); return; }
@@ -172,6 +175,7 @@ export default function ReportIssuePage() {
         setSubmitting(true);
         try {
             const formData = new FormData();
+            formData.append('title', form.title);
             formData.append('issueType', form.type);
             formData.append('description', form.description);
             formData.append('latitude', selectedArea.lat);
@@ -181,25 +185,21 @@ export default function ReportIssuePage() {
             if (form.email) formData.append('reporterEmail', form.email);
             if (photo) formData.append('image', photo);
 
-            const data = await complaintsAPI.create(formData);
+            const data = await complaintsAPI.report(formData);
             const normalized = normalizeComplaint(data.complaint);
 
-            if (data.isDuplicate) {
-                toast.success('⚠️ Similar issue nearby — upvoted it for you!');
+            if (data.message.includes('increased')) {
+                toast.success('📈 Issue report count increased!');
                 addComplaint(normalized);
                 navigate(`/track/${normalized.id}`);
                 return;
             }
 
             addComplaint(normalized);
-            toast.success(`✅ Complaint ${normalized.id} submitted!`);
+            toast.success(`✅ Complaint submitted!`);
             navigate(`/success/${normalized.id}`);
         } catch (err) {
-            console.warn('Backend unavailable, saving locally:', err.message);
-            const complaint = buildComplaint(form, selectedArea, photoPreview);
-            addComplaint(complaint);
-            toast.success(`✅ Complaint ${complaint.id} saved locally`);
-            navigate(`/success/${complaint.id}`);
+            toast.error(err.message || 'Failed to submit report');
         } finally {
             setSubmitting(false);
         }
@@ -237,6 +237,22 @@ export default function ReportIssuePage() {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-5">
+                {/* Title */}
+                <div className="card">
+                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                        Issue Title <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                        type="text"
+                        className="input-field"
+                        placeholder="e.g. Large Pothole near Central Park"
+                        value={form.title}
+                        onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+                        maxLength={100}
+                    />
+                    <p className="text-[10px] text-slate-400 mt-1">Briefly summarize the issue in one line.</p>
+                </div>
+
                 {/* Issue Type */}
                 <div className="card">
                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">

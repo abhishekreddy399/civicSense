@@ -105,11 +105,145 @@ exports.createComplaint = async (req, res, next) => {
     }
 };
 
+// ─── POST /api/complaints/report ─────────────────────────────────────────────
+exports.reportComplaint = async (req, res, next) => {
+    try {
+        const { title, issueType, description, latitude, longitude, reporterEmail } = req.body;
+        const reportedBy = req.user?._id;
+
+        if (!title || !description) {
+            return res.status(400).json({ success: false, message: 'Title and description are required' });
+        }
+
+        // ── Check if same user has already reported same title ──
+        let complaint = await Complaint.findOne({ title, reportedBy });
+
+        if (complaint) {
+            if (complaint.reportCount >= 3) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Maximum reporting limit reached for this issue (3 times).',
+                });
+            }
+            complaint.reportCount += 1;
+            await complaint.save();
+            return res.status(200).json({
+                success: true,
+                message: 'Issue report count increased.',
+                complaint,
+            });
+        }
+
+        // ── Create new complaint if none exists ──
+        const lat = parseFloat(latitude) || 31.3264;
+        const lng = parseFloat(longitude) || 75.5760;
+        const { address, area, city } = await reverseGeocode(lng, lat);
+
+        // Image upload
+        let imageUrl = null, imagePublicId = null;
+        if (req.file) {
+            try {
+                const result = await uploadToCloudinary(req.file.buffer);
+                imageUrl = result.secure_url;
+                imagePublicId = result.public_id;
+            } catch (imgErr) {
+                console.error('Cloudinary upload failed:', imgErr.message);
+            }
+        }
+
+        const complaintId = generateComplaintId();
+        const priority = getPriorityFromType(issueType || 'Other');
+        const timeline = buildTimeline('Submitted');
+
+        complaint = await Complaint.create({
+            complaintId,
+            title,
+            issueType: issueType || 'Other',
+            description,
+            imageUrl,
+            imagePublicId,
+            location: { type: 'Point', coordinates: [lng, lat] },
+            address,
+            area: area || 'Unknown Area',
+            city,
+            priority,
+            status: 'Pending',
+            timeline,
+            reporterEmail: reporterEmail || req.user?.email,
+            reportedBy: req.user?._id,
+            createdBy: req.user?._id, // Keep both for safety
+            reportCount: 1,
+        });
+
+        res.status(201).json({
+            success: true,
+            message: 'Complaint reported successfully',
+            complaint,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// ─── PUT /api/complaints/escalate/:id ────────────────────────────────────────
+exports.escalateComplaint = async (req, res, next) => {
+    try {
+        const complaint = await Complaint.findById(req.params.id);
+
+        if (!complaint) {
+            return res.status(404).json({ success: false, message: 'Complaint not found' });
+        }
+
+        if (complaint.reportCount < 3) {
+            return res.status(400).json({
+                success: false,
+                message: 'Complaint can only be escalated after 3 repeated reports.',
+            });
+        }
+
+        complaint.status = 'Escalated';
+        complaint.escalated = true;
+
+        // Add to timeline
+        if (complaint.timeline) {
+            complaint.timeline.push({ step: 'Escalated', date: new Date(), done: true });
+        }
+
+        await complaint.save();
+
+        res.status(200).json({
+            success: true,
+            message: 'Complaint escalated successfully',
+            complaint,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// ─── GET /api/complaints/admin/escalated ──────────────────────────────────────
+exports.getEscalatedComplaints = async (req, res, next) => {
+    try {
+        const complaints = await Complaint.find({ escalated: true })
+            .populate('reportedBy', 'name email')
+            .sort({ updatedAt: -1 });
+
+        res.status(200).json({
+            success: true,
+            count: complaints.length,
+            complaints,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 // ─── GET /api/complaints/:complaintId ─────────────────────────────────────────
 exports.getComplaint = async (req, res, next) => {
     try {
         const complaint = await Complaint.findOne({ complaintId: req.params.complaintId })
-            .populate('createdBy', 'name email');
+            .populate('createdBy', 'name email')
+            .populate('reportedBy', 'name email');
 
         if (!complaint) {
             return res.status(404).json({ success: false, message: 'Complaint not found. Please check the ID and try again.' });
@@ -164,3 +298,6 @@ exports.getNearbyComplaints = async (req, res, next) => {
         next(error);
     }
 };
+
+// Legacy createComplaint for safety
+exports.createComplaint = exports.reportComplaint;

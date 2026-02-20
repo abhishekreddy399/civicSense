@@ -8,7 +8,7 @@ import { Shield, Search, Filter, CheckCircle2, Clock, AlertTriangle, FileText, C
 import toast from 'react-hot-toast';
 import { Link } from 'react-router-dom';
 
-const STATUSES = ['Pending', 'Assigned', 'In Progress', 'Resolved'];
+const STATUSES = ['Pending', 'Assigned', 'In Progress', 'Resolved', 'Escalated'];
 
 export default function AdminDashboard() {
     const { role, complaints, updateComplaint } = useApp();
@@ -38,7 +38,7 @@ export default function AdminDashboard() {
 
     const total = complaints.length;
     const pending = complaints.filter((c) => c.status === 'Pending').length;
-    const highPriority = complaints.filter((c) => c.priority === 'High').length;
+    const escalated = complaints.filter((c) => c.escalated || c.status === 'Escalated').length;
     const resolved = complaints.filter((c) => c.status === 'Resolved').length;
 
     const handleStatusChange = (id, newStatus) => {
@@ -134,7 +134,7 @@ export default function AdminDashboard() {
                 {[
                     { label: 'Total Complaints', value: total, icon: FileText, color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' },
                     { label: 'Pending', value: pending, icon: Clock, color: 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' },
-                    { label: 'High Priority', value: highPriority, icon: AlertTriangle, color: 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400' },
+                    { label: 'Escalated', value: escalated, icon: AlertTriangle, color: 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400' },
                     { label: 'Resolved', value: resolved, icon: CheckCircle2, color: 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' },
                 ].map(({ label, value, icon: Icon, color }) => (
                     <div key={label} className="card flex items-center gap-3">

@@ -13,6 +13,10 @@ const complaintSchema = new mongoose.Schema(
             unique: true,
             required: true,
         },
+        title: {
+            type: String,
+            required: [true, 'Title is required'],
+        },
         issueType: {
             type: String,
             required: [true, 'Issue type is required'],
@@ -55,10 +59,23 @@ const complaintSchema = new mongoose.Schema(
             type: String,
             default: 'Mumbai',
         },
+        reportCount: {
+            type: Number,
+            default: 1,
+        },
+        escalated: {
+            type: Boolean,
+            default: false,
+        },
+        reportedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            required: [true, 'Reporting user is required'],
+        },
         status: {
             type: String,
-            enum: ['Submitted', 'Assigned', 'In Progress', 'Resolved'],
-            default: 'Submitted',
+            enum: ['Submitted', 'Pending', 'Assigned', 'In Progress', 'Resolved', 'Escalated'],
+            default: 'Pending',
         },
         priority: {
             type: String,

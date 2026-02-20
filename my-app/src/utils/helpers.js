@@ -16,6 +16,7 @@ export function getStatusBadgeClass(status) {
         case 'Assigned': return 'badge-assigned';
         case 'In Progress': return 'badge-in-progress';
         case 'Resolved': return 'badge-resolved';
+        case 'Escalated': return 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400';
         default: return 'badge-pending';
     }
 }
@@ -37,6 +38,7 @@ export function getStatusColor(status) {
         case 'assigned': return '#3b82f6'; // Blue
         case 'in progress': return '#8b5cf6'; // Purple
         case 'resolved': return '#22c55e'; // Green
+        case 'escalated': return '#ef4444'; // Red
         default: return '#f97316';
     }
 }
@@ -85,11 +87,16 @@ export function normalizeComplaint(c) {
     return {
         ...c,
         id: c.complaintId || c.id,
+        title: c.title || c.type,
         type: c.issueType || c.type,
         lat: c.location?.coordinates ? c.location.coordinates[1] : (c.lat || 0),
         lng: c.location?.coordinates ? c.location.coordinates[0] : (c.lng || 0),
-        status: c.status === 'Submitted' ? 'Pending' : c.status,
+        status: (c.status === 'Submitted' || c.status === 'Pending')
+            ? (c.escalated ? 'Escalated' : 'Pending')
+            : c.status,
         photo: c.imageUrl || c.photo,
+        reportCount: c.reportCount || 1,
+        escalated: c.escalated || false,
         timeline: c.timeline || getDefaultTimeline(c.createdAt)
     };
 }
