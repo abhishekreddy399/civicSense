@@ -1,0 +1,75 @@
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const helmet = require('helmet');
+const morgan = require('morgan');
+const connectDB = require('./config/db');
+const errorHandler = require('./middleware/errorHandler');
+
+// ─── Connect Database ─────────────────────────────────────────────────────────
+connectDB();
+
+const app = express();
+
+// ─── Security & Logging ───────────────────────────────────────────────────────
+app.use(helmet());
+app.use(morgan(process.env.NODE_ENV === 'development' ? 'dev' : 'combined'));
+
+// ─── CORS ─────────────────────────────────────────────────────────────────────
+const allowedOrigins = [
+    process.env.CLIENT_URL || 'http://localhost:3000',
+    'http://localhost:3000',
+    'http://localhost:3001',
+];
+
+// Allow all Vercel/Netlify preview URLs
+app.use(cors({
+    origin: (origin, callback) => {
+        if (!origin) return callback(null, true); // allow server-to-server / curl
+        if (
+            allowedOrigins.includes(origin) ||
+            /\.vercel\.app$/.test(origin) ||
+            /\.netlify\.app$/.test(origin)
+        ) {
+            return callback(null, true);
+        }
+        callback(new Error(`CORS: origin ${origin} not allowed`));
+    },
+    credentials: true,
+}));
+
+// ─── Body Parsers ─────────────────────────────────────────────────────────────
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// ─── Health Check ─────────────────────────────────────────────────────────────
+app.get('/api/health', (req, res) => {
+    res.json({
+        success: true,
+        message: 'CivicSense API is running',
+        timestamp: new Date().toISOString(),
+        env: process.env.NODE_ENV,
+    });
+});
+
+// ─── API Routes ───────────────────────────────────────────────────────────────
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/complaints', require('./routes/complaints'));
+app.use('/api/admin', require('./routes/admin'));
+app.use('/api/analytics', require('./routes/analytics'));
+
+// ─── 404 Handler ─────────────────────────────────────────────────────────────
+app.use('*', (req, res) => {
+    res.status(404).json({ success: false, message: `Route ${req.originalUrl} not found` });
+});
+
+// ─── Global Error Handler ─────────────────────────────────────────────────────
+app.use(errorHandler);
+
+// ─── Start Server ─────────────────────────────────────────────────────────────
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+    console.log(`\n🚀 CivicSense API running on port ${PORT}`);
+    console.log(`   Mode: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`   Health: http://localhost:${PORT}/api/health\n`);
+});
