@@ -29,7 +29,8 @@ app.use(cors({
         if (
             allowedOrigins.includes(origin) ||
             /\.vercel\.app$/.test(origin) ||
-            /\.netlify\.app$/.test(origin)
+            /\.netlify\.app$/.test(origin) ||
+            /\.onrender\.com$/.test(origin)
         ) {
             return callback(null, true);
         }
