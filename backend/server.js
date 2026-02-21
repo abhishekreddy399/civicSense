@@ -20,10 +20,12 @@ const allowedOrigins = [
     process.env.CLIENT_URL || 'http://localhost:3000',
     'http://localhost:3000',
     'http://localhost:3001',
+    // Hardcoded known Render URLs as safety net
+    'https://civicsense-1-b44u.onrender.com',
+    'https://civicsense-tvmn.onrender.com',
 ];
 
-// Allow all Vercel/Netlify preview URLs
-app.use(cors({
+const corsOptions = {
     origin: (origin, callback) => {
         if (!origin) return callback(null, true); // allow server-to-server / curl
         if (
@@ -37,7 +39,13 @@ app.use(cors({
         callback(new Error(`CORS: origin ${origin} not allowed`));
     },
     credentials: true,
-}));
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+};
+
+app.use(cors(corsOptions));
+// Explicitly handle preflight OPTIONS requests for all routes
+app.options('*', cors(corsOptions));
 
 // ─── Body Parsers ─────────────────────────────────────────────────────────────
 app.use(express.json({ limit: '10mb' }));
