@@ -115,8 +115,14 @@ exports.reportComplaint = async (req, res, next) => {
             return res.status(400).json({ success: false, message: 'Title and description are required' });
         }
 
-        // ── Check if same issue has already been reported (by anyone) ──
-        let complaint = await Complaint.findOne({ title, issueType });
+        const cleanTitle = title.trim();
+        const cleanType = issueType.trim();
+
+        // ── Check if same issue has already been reported (by anyone) — Case Insensitive ──
+        let complaint = await Complaint.findOne({
+            title: { $regex: new RegExp(`^${cleanTitle}$`, 'i') },
+            issueType: cleanType
+        });
 
         if (complaint) {
             if (complaint.reportCount >= 3) {

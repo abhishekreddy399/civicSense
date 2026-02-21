@@ -37,9 +37,9 @@ export default function AdminDashboard() {
     }
 
     const total = complaints.length;
-    const pending = complaints.filter((c) => c.status === 'Pending').length;
-    const escalated = complaints.filter((c) => c.escalated || c.status === 'Escalated').length;
-    const resolved = complaints.filter((c) => c.status === 'Resolved').length;
+    const pending = complaints.filter((c) => c.status?.toLowerCase() === 'pending').length;
+    const escalated = complaints.filter((c) => c.escalated || c.status?.toLowerCase() === 'escalated').length;
+    const resolved = complaints.filter((c) => c.status?.toLowerCase() === 'resolved').length;
 
     const handleStatusChange = (id, newStatus) => {
         const complaint = complaints.find((c) => c.id === id);
