@@ -1,12 +1,12 @@
 const Complaint = require('../models/Complaint');
 const { sendResolutionEmail } = require('../utils/emailService');
 
-const STATUSES = ['Submitted', 'Assigned', 'In Progress', 'Resolved'];
+const STATUSES = ['Submitted', 'Pending', 'Assigned', 'In Progress', 'Resolved', 'Escalated'];
 
 // ─── GET /api/admin/complaints ────────────────────────────────────────────────
 exports.getAllComplaints = async (req, res, next) => {
     try {
-        const { status, priority, search, sort = '-createdAt', page = 1, limit = 50 } = req.query;
+        const { status, priority, search, sort = '-createdAt', page = 1, limit = 100 } = req.query;
 
         const filter = {};
         if (status && status !== 'All') filter.status = status;
@@ -16,7 +16,7 @@ exports.getAllComplaints = async (req, res, next) => {
                 { complaintId: { $regex: search, $options: 'i' } },
                 { issueType: { $regex: search, $options: 'i' } },
                 { area: { $regex: search, $options: 'i' } },
-                { description: { $regex: search, $options: 'i' } },
+                { title: { $regex: search, $options: 'i' } },
             ];
         }
 
@@ -25,7 +25,7 @@ exports.getAllComplaints = async (req, res, next) => {
             .sort(sort)
             .skip((parseInt(page) - 1) * parseInt(limit))
             .limit(parseInt(limit))
-            .populate('createdBy', 'name email');
+            .populate('reportedBy', 'name email');
 
         // Summary stats
         const stats = await Complaint.aggregate([
@@ -42,10 +42,11 @@ exports.getAllComplaints = async (req, res, next) => {
             pages: Math.ceil(total / parseInt(limit)),
             stats: {
                 total,
-                pending: statsMap['Submitted'] || 0,
+                pending: (statsMap['Submitted'] || 0) + (statsMap['Pending'] || 0),
                 assigned: statsMap['Assigned'] || 0,
                 inProgress: statsMap['In Progress'] || 0,
                 resolved: statsMap['Resolved'] || 0,
+                escalated: statsMap['Escalated'] || 0,
                 highPriority: await Complaint.countDocuments({ priority: 'High' }),
             },
             complaints,

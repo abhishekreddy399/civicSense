@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { DEPARTMENTS } from '../data/mockData';
 import { StatusBadge, PriorityBadge } from '../components/ui/Badge';
@@ -7,6 +7,8 @@ import EmptyState from '../components/ui/EmptyState';
 import { Shield, Search, Filter, CheckCircle2, Clock, AlertTriangle, FileText, ChevronUp, ChevronDown, Mail, X, Send } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Link } from 'react-router-dom';
+import { adminAPI } from '../services/api';
+import { normalizeComplaint } from '../utils/helpers';
 
 const STATUSES = ['Pending', 'Assigned', 'In Progress', 'Resolved', 'Escalated'];
 
@@ -18,6 +20,26 @@ export default function AdminDashboard() {
     const [sortField, setSortField] = useState('createdAt');
     const [sortDir, setSortDir] = useState('desc');
     const [emailModal, setEmailModal] = useState(null); // { email, complaintId, type, area }
+    const [liveComplaints, setLiveComplaints] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    const fetchComplaints = async () => {
+        try {
+            setLoading(true);
+            const data = await adminAPI.getAll();
+            setLiveComplaints(data.complaints.map(normalizeComplaint));
+        } catch (err) {
+            console.error('Failed to fetch complaints:', err.message);
+            // Fallback to context if API fails
+            setLiveComplaints(complaints);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (role === 'admin') fetchComplaints();
+    }, [role]);
 
     if (role !== 'admin') {
         return (
@@ -36,13 +58,13 @@ export default function AdminDashboard() {
         );
     }
 
-    const total = complaints.length;
-    const pending = complaints.filter((c) => c.status?.toLowerCase() === 'pending').length;
-    const escalated = complaints.filter((c) => c.escalated || c.status?.toLowerCase() === 'escalated').length;
-    const resolved = complaints.filter((c) => c.status?.toLowerCase() === 'resolved').length;
+    const total = liveComplaints.length;
+    const pending = liveComplaints.filter((c) => c.status?.toLowerCase() === 'pending').length;
+    const escalated = liveComplaints.filter((c) => c.escalated || c.status?.toLowerCase() === 'escalated').length;
+    const resolved = liveComplaints.filter((c) => c.status?.toLowerCase() === 'resolved').length;
 
-    const handleStatusChange = (id, newStatus) => {
-        const complaint = complaints.find((c) => c.id === id);
+    const handleStatusChange = async (id, newStatus) => {
+        const complaint = liveComplaints.find((c) => c.id === id);
         const newTimeline = STATUSES.map((step) => {
             const stepIdx = STATUSES.indexOf(step);
             const newStatusIdx = STATUSES.indexOf(newStatus);
@@ -52,8 +74,13 @@ export default function AdminDashboard() {
                 done: stepIdx <= newStatusIdx,
             };
         });
-        updateComplaint(id, { status: newStatus, timeline: newTimeline, emailNotified: newStatus === 'Resolved' });
-        toast.success(`Status updated to "${newStatus}"`);
+        try {
+            await adminAPI.updateStatus(complaint._id || id, newStatus);
+            toast.success(`Status updated to "${newStatus}"`);
+            fetchComplaints(); // Refresh from DB
+        } catch (err) {
+            toast.error(err.message);
+        }
 
         // Trigger email simulation modal if Resolved and email exists
         if (newStatus === 'Resolved' && complaint?.reporterEmail) {
@@ -72,18 +99,15 @@ export default function AdminDashboard() {
         }
     };
 
-    const handleDeptChange = (id, dept) => {
-        updateComplaint(id, {
-            department: dept,
-            status: 'Assigned',
-            timeline: [
-                { step: 'Submitted', date: new Date().toISOString(), done: true },
-                { step: 'Assigned', date: new Date().toISOString(), done: true },
-                { step: 'In Progress', date: null, done: false },
-                { step: 'Resolved', date: null, done: false },
-            ],
-        });
-        toast.success(`Assigned to ${dept}`);
+    const handleDeptChange = async (id, dept) => {
+        const complaint = liveComplaints.find((c) => c.id === id);
+        try {
+            await adminAPI.assign(complaint._id || id, dept);
+            toast.success(`Assigned to ${dept}`);
+            fetchComplaints(); // Refresh from DB
+        } catch (err) {
+            toast.error(err.message);
+        }
     };
 
     const toggleSort = (field) => {
@@ -91,7 +115,7 @@ export default function AdminDashboard() {
         else { setSortField(field); setSortDir('desc'); }
     };
 
-    const filtered = complaints
+    const filtered = liveComplaints
         .filter((c) => {
             const typeStr = c.type ? String(c.type).toLowerCase() : '';
             const areaStr = c.area ? String(c.area).toLowerCase() : '';
@@ -174,7 +198,12 @@ export default function AdminDashboard() {
             </div>
 
             {/* Table */}
-            {filtered.length === 0 ? (
+            {loading ? (
+                <div className="flex flex-col items-center justify-center py-20 card">
+                    <div className="w-10 h-10 border-4 border-civic-200 border-t-civic-600 rounded-full animate-spin mb-4"></div>
+                    <p className="text-slate-500 text-sm">Fetching live reports from city database...</p>
+                </div>
+            ) : filtered.length === 0 ? (
                 <EmptyState icon={Search} title="No complaints found" description="Try adjusting the filters or search term." />
             ) : (
                 <div className="card p-0 overflow-hidden">
