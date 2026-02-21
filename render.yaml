@@ -12,7 +12,7 @@ services:
         destination: /index.html
     envVars:
       - key: REACT_APP_API_URL
-        sync: false  # You will paste the backend URL manually in the Render dashboard
+        value: https://civicsense-tvmn.onrender.com
       - key: CI
         value: false
       - key: GENERATE_SOURCEMAP
