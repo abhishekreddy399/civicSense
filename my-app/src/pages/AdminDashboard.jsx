@@ -60,7 +60,7 @@ export default function AdminDashboard() {
 
     const total = liveComplaints.length;
     const pending = liveComplaints.filter((c) => c.status?.toLowerCase() === 'pending').length;
-    const escalated = liveComplaints.filter((c) => c.escalated || c.status?.toLowerCase() === 'escalated').length;
+    const escalated = liveComplaints.filter((c) => c.status?.toLowerCase() === 'escalated').length;
     const resolved = liveComplaints.filter((c) => c.status?.toLowerCase() === 'resolved').length;
 
     const handleStatusChange = async (id, newStatus) => {
