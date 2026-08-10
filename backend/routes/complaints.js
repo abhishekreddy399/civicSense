@@ -13,7 +13,7 @@ const { protect, adminOnly, optionalAuth } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 
 // ── New Complaint Escalation Routes ──
-router.post('/report', protect, upload.single('image'), reportComplaint);
+router.post('/report', optionalAuth, upload.single('image'), reportComplaint);
 router.put('/escalate/:id', protect, escalateComplaint);
 router.get('/admin/escalated', protect, adminOnly, getEscalatedComplaints);
 
